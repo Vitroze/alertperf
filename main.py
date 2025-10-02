@@ -2,8 +2,6 @@ import time
 import psutil
 from tkinter import messagebox
 
-messagebox.showinfo("Title", "Message")
-
 bAlert = False
 iLimitMax = 95
 while True:
