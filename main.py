@@ -6,14 +6,30 @@ bAlert = False
 iLimitMax = 95
 
 def listProccess():
-    for proc in psutil.process_iter(['pid', 'name', 'username']):
-        print(proc.info)
 
-listProccess()
+    tList = []
+    for proc in psutil.process_iter(['pid', 'name']):
+        oProccess = psutil.Process(proc.info['pid'])
+
+        cpu = oProccess.cpu_percent(interval=0.1)  # Initial call to set up the measurement
+
+        if cpu == 0.0 or cpu is None or proc.info['name'] == "System Idle Process":
+            continue
+
+        mem = oProccess.memory_percent()
+        disk = oProccess.io_counters()
+        tList.append((proc.info['name'], cpu, mem, disk.read_bytes, disk.write_bytes))
+
+    tList.sort(key=lambda x: x[1], reverse=True)
+
+    return tList[:10]
 
 def writeLog(sType):
     with open("alertperf.log", "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {sType} usage reached {iLimitMax}%\n")
+
+        for proc in listProccess():
+            f.write(f"Processus: {proc[0]} | CPU: {proc[1]}% | RAM: {proc[2]}% | Disque (lu/écrit): {proc[3]/1e6:.2f} / {proc[4]/1e6:.2f} Mo\n")
 
 while True:
     cpu = psutil.cpu_percent()
